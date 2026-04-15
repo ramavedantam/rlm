@@ -1,0 +1,16 @@
+[project]
+name = "rlm"
+version = "0.5.0"
+description = "Recursive Language Model — an LLM with a Python REPL that can call itself recursively on sub-problems"
+requires-python = ">=3.11"
+dependencies = ["openai", "anthropic"]
+
+[project.scripts]
+rlm = "rlm.cli:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["rlm"]

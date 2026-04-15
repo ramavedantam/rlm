@@ -1,0 +1,212 @@
+
+--- Iteration 1 ---
+Root LM: ```repl
+files = list_files("/private/tmp/rlm_romantic_timeline")
+print(files)
+```
+```json
+{
+  "files": [
+    "1800s",
+    "1810s",
+    "1820s",
+    "1830s",
+    "1840s",
+    "1850s",
+    "1860s",
+    "1870s",
+    "1880s",
+    "1890s"
+  ]
+}
+```...
+REPL stdout: ['1800s', '1810s', '1820s', '1830s', '1840s', '1850s', '1860s', '1870s', '1880s', '1890s']
+
+
+--- Iteration 2 ---
+Root LM: ```repl
+decade_texts = {}
+for f in files:
+    path = f"/private/tmp/rlm_romantic_timeline/{f}"
+    txt = read_file(path)
+    decade_texts[f] = txt
+    print(f, len(txt))
+```
+...
+REPL stdout: 1800s 125
+1810s 125
+1820s 125
+1830s 125
+1840s 125
+1850s 125
+1860s 125
+1870s 125
+1880s 125
+1890s 125
+
+
+--- Iteration 3 ---
+Root LM: ```repl
+for decade, txt in decade_texts.items():
+    print("DECADE:", decade)
+    print(repr(txt))
+    print("---")
+```
+...
+REPL stdout: DECADE: 1800s
+"Error reading /private/tmp/rlm_romantic_timeline/1800s: [Errno 21] Is a directory: '/private/tmp/rlm_romantic_timeline/1800s'"
+---
+DECADE: 1810s
+"Error reading /private/tmp/rlm_romantic
+
+--- Iteration 4 ---
+Root LM: ```repl
+decade_dirs = {}
+for f in files:
+    dpath = f"/private/tmp/rlm_romantic_timeline/{f}"
+    subfiles = list_files(dpath)
+    decade_dirs[f] = subfiles
+    print(f, subfiles)
+```...
+REPL stdout: 1800s ['belinda.txt', 'castle_rackrent.txt', 'northanger_abbey.txt', 'sense_and_sensibility.txt', 'the_mysteries_of_udolpho.txt']
+1810s ['emma.txt', 'mansfield_park.txt', 'persuasion.txt', 'pride_and_
+
+--- Iteration 5 ---
+Root LM: ```repl
+sample_paths = []
+for decade, subs in decade_dirs.items():
+    for s in subs[:1]:
+        sample_paths.append(f"/private/tmp/rlm_romantic_timeline/{decade}/{s}")
+
+samples = {}
+for p in sample_paths:
+    txt = read_file(p)
+    samples[p] = txt[:2000]
+    print("PATH:", p)
+    print(txt[:1000]...
+REPL stdout: PATH: /private/tmp/rlm_romantic_timeline/1800s/belinda.txt
+﻿The Project Gutenberg eBook of Tales and Novels — Volume 03
+    
+This eBook is for the use of anyone anywhere in the United States and
+most 
+
+--- Iteration 6 ---
+Root LM: ```repl
+import re, json, math, statistics
+from collections import Counter, defaultdict
+
+all_paths = []
+for decade, subs in decade_dirs.items():
+    for s in subs:
+        all_paths.append((decade, s, f"/private/tmp/rlm_romantic_timeline/{decade}/{s}"))
+
+print("novel count", len(all_paths))
+
+def stri...
+REPL stdout: novel count 50
+('1800s', 'belinda.txt') 1003498 Produced by Jonathan Ingram, Sheila Vogtmann, David Widger and PG Distributed Proofreaders         TALES AND NOVELS,   VOLUME III (of X)   BELINDA.  By 
+
+--- Iteration 7 ---
+Root LM: ```repl
+romance_prompt = """
+You are analyzing novels for romantic language.
+
+Given a novel text, identify passages containing romantic language, broadly defined:
+- courtship and flirtation
+- declarations of love
+- descriptions of attraction or beauty with romantic/erotic valence
+- jealousy or roman...
+REPL stdout: prompt ready 1196
+
+
+--- Iteration 8 ---
+Root LM: ```repl
+def word_count(text):
+    return len(re.findall(r"\b[\w'-]+\b", text))
+
+results = {}
+for i, (decade, fname, path) in enumerate(all_paths):
+    text = novel_texts[(decade, fname)]
+    wc = word_count(text)
+    excerpt = text[:220000]
+    prompt = romance_prompt + "\n\nNOVEL: " + fname + "\nWO...
+REPL stdout: 1 1800s belinda.txt 180576 12
+2 1800s castle_rackrent.txt 45797 10
+3 1800s northanger_abbey.txt 78102 10
+4 1800s sense_and_sensibility.txt 120515 12
+5 1800s the_mysteries_of_udolpho.txt 293176 11
+6 18
+
+--- Iteration 9 ---
+Root LM: ```repl
+theme_set = ["courtship","declaration_of_love","attraction_desire","romantic_suffering","jealousy","proposal_engagement","marriage_domestic_union","seduction_temptation","parting_loss","idealization_devotion"]
+
+per_novel = []
+per_decade_acc = defaultdict(lambda: {"novels":0,"freqs":[],"ints"...
+REPL stdout: 
+
+--- Iteration 10 ---
+Root LM: ```repl
+decades_sorted = sorted(per_decade_acc.keys())
+per_decade = []
+timeline = []
+
+for d in decades_sorted:
+    acc = per_decade_acc[d]
+    top_themes = [t for t,_ in acc["theme_counts"].most_common(5)]
+    rec = {
+        "decade": d,
+        "novel_count": acc["novels"],
+        "average_romant...
+REPL stdout: 
+
+--- Iteration 11 ---
+Root LM: ```repl
+top_passages = []
+for n in per_novel:
+    for p in n["passages"]:
+        top_passages.append({
+            "novel": n["novel"],
+            "decade": n["decade"],
+            "quote": p["quote"],
+            "sentiment_intensity": p["sentiment_intensity"],
+            "themes": p["themes"]
+...
+REPL stdout: candidate top passages: 20
+1800s the_mysteries_of_udolpho 5 She hesitated in believing, what would have been sufficiently apparent to almost any other person, that he had purposely left this book, ins
+
+--- Iteration 12 ---
+Root LM: ```repl
+summary_input = {
+    "per_decade": per_decade,
+    "changes": changes
+}
+summary_text = llm_query(
+    "Using the following decade metrics, write concise JSON with keys "
+    'timeline_summary (array by decade with 1-2 sentence interpretation) and '
+    'inflection_points (3-5 items identify...
+REPL stdout: {
+  "timeline_summary": [
+    {
+      "decade": "1800s",
+      "interpretation": "The corpus begins with relatively frequent romantic material and moderately strong sentiment, centered on courtship, d
+
+--- Iteration 13 ---
+Root LM: ```repl
+summary = json.loads(summary_text)
+
+final_result = {
+    "metadata": {
+        "corpus_directory": "/private/tmp/rlm_romantic_timeline",
+        "novel_count": len(per_novel),
+        "decades": decades_sorted,
+        "method_note": "Passages were identified with LLM-assisted extraction fro...
+REPL stdout: 
+Transcript saved to /Users/svedantam/Code/agent-orchaestra/rlm/scripts/romantic_timeline_results/run_20260409_133037_transcript.json
+Code log: 13 blocks across depths [0]
+
+--- Stats ---
+Iterations: 13
+Input tokens: 2,633,515
+Output tokens: 74,147
+Total tokens: 2,707,662

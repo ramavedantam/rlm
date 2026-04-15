@@ -1,0 +1,145 @@
+
+--- Iteration 1 ---
+Root LM: ```repl
+files = list_files("/private/tmp/rlm_500_novel_experiment")
+print(files)
+```
+...
+REPL stdout: ['1800s', '1810s', '1820s', '1830s', '1840s', '1850s', '1860s', '1870s', '1880s', '1890s']
+
+
+--- Iteration 2 ---
+Root LM: ```repl
+# Next: inspect one decade file to determine its format/content structure.
+sample_1800s = read_file("/private/tmp/rlm_500_novel_experiment/1800s")
+print(sample_1800s[:4000])
+```
+...
+REPL stdout: Error reading /private/tmp/rlm_500_novel_experiment/1800s: [Errno 21] Is a directory: '/private/tmp/rlm_500_novel_experiment/1800s'
+
+
+--- Iteration 3 ---
+Root LM: ```repl
+# The decade entries are directories; list the contents of one to see the novel files.
+files_1800s = list_files("/private/tmp/rlm_500_novel_experiment/1800s")
+print(files_1800s[:50])
+print("count:", len(files_1800s))
+```...
+REPL stdout: ['atala.txt', 'castle_rackrent.txt', 'guy_mannering_or_the_astrologer_complete.txt', 'kenilworth.txt', 'memoirs_of_carwin_the_biloquist_a_fragment.txt', 'old_mortality_complete.txt', 'peveril_of_the_p
+
+--- Iteration 4 ---
+Root LM: ```repl
+# Read a sample novel to inspect front matter and text quality.
+sample_novel_path = "/private/tmp/rlm_500_novel_experiment/1800s/atala.txt"
+sample_novel = read_file(sample_novel_path)
+print(sample_novel[:5000])
+print("\nTOTAL CHARS:", len(sample_novel))
+```...
+REPL stdout: ﻿The Project Gutenberg eBook of Atala
+    
+This eBook is for the use of anyone anywhere in the United States and
+most other parts of the world at no cost and with almost no restrictions
+whatsoever. Yo
+
+--- Iteration 5 ---
+Root LM: ```repl
+# Build a robust pipeline:
+# 1) enumerate all decade directories and novel files
+# 2) inspect a few filenames from multiple decades
+# 3) prepare for text cleaning / metadata extraction
+
+decades = files
+corpus_index = {}
+for decade in decades:
+    decade_path = f"/private/tmp/rlm_500_novel_ex...
+REPL stdout: 1800s 27 ['atala.txt', 'castle_rackrent.txt', 'guy_mannering_or_the_astrologer_complete.txt', 'kenilworth.txt', 'memoirs_of_carwin_the_biloquist_a_fragment.txt', 'old_mortality_complete.txt', 'peveril
+
+--- Iteration 6 ---
+Root LM: ```repl
+import re, json, math, statistics
+from collections import Counter, defaultdict
+
+# Read all texts and compute lightweight metadata first.
+def clean_gutenberg_text(text):
+    text = text.replace('\ufeff', '')
+    start_markers = [
+        "*** START OF THE PROJECT GUTENBERG EBOOK",
+        "**...
+REPL stdout: novels: 419
+[{'decade': '1800s', 'filename': 'atala.txt', 'path': '/private/tmp/rlm_500_novel_experiment/1800s/atala.txt', 'title': 'Atala', 'author': 'vicomte de François-René Chateaubriand', 'word_c
+
+--- Iteration 7 ---
+Root LM: ```repl
+# Use a scalable heuristic extractor for romantic passages.
+# We'll split into paragraphs, score each paragraph for romantic language,
+# assign themes, and estimate sentiment intensity.
+
+romance_terms = {
+    "love","loved","loving","lover","lovers","beloved","adore","adored","adoration",
+  ...
+REPL stdout: processed novels: 419
+total romantic passages: 58241
+{'decade': '1800s', 'title': 'Atala', 'author': 'vicomte de François-René Chateaubriand', 'filename': 'atala.txt', 'word_count': 26820, 'romantic_p
+
+--- Iteration 8 ---
+Root LM: ```repl
+# Refine extraction to reduce false positives from introductions/front matter and generic "heart/court" noise.
+# We'll:
+# - drop early front matter before CHAPTER/BOOK/LETTER if present
+# - tighten romance lexicon (remove overly broad "heart", "court")
+# - require either a strong pattern OR ...
+REPL stdout: refined total passages: 44560
+{'decade': '1800s', 'title': 'Atala', 'author': 'vicomte de François-René Chateaubriand', 'filename': 'atala.txt', 'word_count': 26820, 'romantic_passage_count': 43, 'rom
+
+--- Iteration 9 ---
+Root LM: ```repl
+# Aggregate by decade and identify top passages.
+novels_by_decade = defaultdict(list)
+for n in refined_novels:
+    novels_by_decade[n["decade"]].append(n)
+
+decade_aggregates = {}
+timeline = []
+for d in sorted(novels_by_decade.keys()):
+    arr = novels_by_decade[d]
+    mean_freq = round(stati...
+REPL stdout: {
+  "1800s": {
+    "novel_count": 27,
+    "total_words": 4214730,
+    "total_romantic_passages": 3189,
+    "mean_novel_level_romantic_passages_per_10000_words": 7.948,
+    "corpus_weighted_romantic_pa
+
+--- Iteration 10 ---
+Root LM: ```repl
+# Clean top passages by excluding obvious tables of contents / poetry catalogs / misc front matter.
+def bad_top_quote(q):
+    low = q.lower()
+    if len(re.findall(r"\b\d+--", q)) >= 3:
+        return True
+    if "contents" in low or "illustrations" in low:
+        return True
+    if q.count...
+REPL stdout: [
+  {
+    "decade": "1840s",
+    "title": "The Works of Edgar Allan Poe, The Raven Edition",
+    "author": "Edgar Allan Poe",
+    "quote": "PART I. O! nothing earthly save the ray (Thrown back from fl
+
+--- Iteration 11 ---
+Root LM: ```repl
+# Remove clearly misdated / anomalous or non-novel anthology-like items from top-passages only by requiring title/author plausibility
+# and avoiding giant collected works / obvious modern outliers in the top-10 list.
+bad_title_markers = [
+    "works of", "volume", "compilation", "history of ...
+REPL stdout: 
+Transcript saved to /Users/svedantam/Code/agent-orchaestra/rlm/scripts/500_novel_results/run_20260415_121418_transcript.json
+Code log: 11 blocks across depths [0]
+
+--- Stats ---
+Iterations: 11
+Input tokens: 87,751
+Output tokens: 5,776
+Total tokens: 93,527
